@@ -3,6 +3,9 @@ package net.dankito.readability4j.processor
 import net.dankito.readability4j.model.ArticleMetadata
 import net.dankito.readability4j.util.RegExUtil
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Node
+import org.jsoup.select.NodeFilter
+import org.jsoup.nodes.TextNode
 import java.util.regex.Pattern
 
 
@@ -97,7 +100,18 @@ open class MetadataParser(protected val regEx: RegExUtil = RegExUtil()): Process
         else if(curTitle.contains(": ")) {
             // Check if we have an heading containing this exact string, so we
             // could assume it's the full title.
-            val match = doc.select("h1, h2").filter { it.wholeText() == curTitle }.size > 0
+            val match = doc.select("h1, h2").filter(
+                object : NodeFilter { 
+                    override fun head(node: Node, depth: Int) : NodeFilter.FilterResult {
+                        val it = node as? TextNode
+                        if (it !=null ) {
+                            if (it.wholeText == curTitle) {
+                                return NodeFilter.FilterResult.CONTINUE
+                            }
+                        }
+                        return NodeFilter.FilterResult.REMOVE
+                    }
+                }).size > 0
 
             // If we don't, let's extract the title out of the original title string.
             if(match == false) {
